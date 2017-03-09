@@ -4,29 +4,50 @@ fn main() {
 	//take the first (should also be only) string to parse into a grid
     let arg = env::args().nth(1).unwrap_or(String::from("."));
 
-    println!("{:?}", arg);
+    //println!("{:?}", arg);
 
     let mut grid = Grid::new(); 
 
     //figure out how to add to the grid
+    let mut row_index = 0;
+    let mut col_index = 0;
     for c in arg.chars(){
     	if c.is_digit(10){
+            let mut value = Possible::new();
     		if c == '0'{
-    			println!("{:?}", "We don't know");
+    			//println!("{:?}", "We don't know");
     		}
     		else{
-    			println!("{:?}", c);
+    			//println!("{:?}", c);
+                value.set(c.to_digit(10).unwrap() as usize - 1);
     		}
+            grid.cells[row_index][col_index] = value;
+            col_index += 1;
+            if col_index % 9 == 0{
+                col_index = 0;
+                row_index += 1;
+            }
     	}
     }
-
-    while !grid.is_solved() {
+    grid.string();
+    //while !grid.is_solved() {
+    for i in 0..1{
         //for all in grid where we know it _is_ the value
         //call solve on the value
+        for row_index in 0..9{
+            for col_index in 0..9{
+                let current_value = grid.cells[row_index][col_index].solved_value(); 
+                if current_value.is_some(){
+                    grid.solve(row_index, col_index, current_value.unwrap());
+                }
+                
+            }
+        }
+        grid.string();
     }
 
     //print solved grid
-    grid.string();
+    //grid.string();
 }
 #[derive(Copy, Clone)]
 struct Possible {
@@ -36,7 +57,7 @@ struct Possible {
 impl Possible {
 
 	fn new() -> Possible {
-		let mut n_v: [bool; 9] = [false, false, false, false, false, false, false, false, false];
+		let mut n_v: [bool; 9] = [true, true, true, true, true, true, true, true, true];
 		Possible {
 			v: n_v,
 		}
@@ -57,8 +78,8 @@ impl Possible {
     }
 
     fn set(&mut self, i: usize) {
-    	for i in 0..self.v.len() {
-    		self.v[i] = false;
+    	for j in 0..self.v.len() {
+    		self.v[j] = false;
     	}
     	self.v[i] = true;
     }
@@ -67,13 +88,13 @@ impl Possible {
         self.v[i] = false;
     }
 
-    fn solved_value(&self) -> usize {
+    fn solved_value(&self) -> Option<usize> {
         for i in 0..self.v.len() {
             if self.v[i] {
-                return i+1 as usize;
+                return Some(i+1 as usize);
             }
         }
-        panic!("{:?}", "No solved value!");
+        return None;
     }
 }
 
@@ -91,9 +112,12 @@ impl Grid {
     }
 
     fn is_solved(&mut self) -> bool {
+        
         for i in 0..9 {
             for j in 0..9 {
+                
                 if self.cells[i][j].count() > 1 {
+                    
                     return false;
                 }
             }
@@ -123,8 +147,8 @@ impl Grid {
     }
 
     fn group(&self, i: usize, j: usize) -> i8 {
-        let col_group = ((i+ 1) as f32/3.0_f32).ceil() as i8;
-        let row_group = ((j+ 1) as f32/3.0_f32).ceil() as i8;
+        let col_group = ((i) as f32/3.0_f32).floor() as i8;
+        let row_group = ((j) as f32/3.0_f32).floor() as i8;
         //TODO: fix later
         if col_group == 0 && row_group == 0 {
             return 0;
@@ -156,41 +180,54 @@ impl Grid {
         panic!("{:?}","Something went terribly wrong");
     }
     //cell[i][j] contains x
+    //i is row
+    //j is column
     fn solve(&mut self, i: usize, j: usize, x: usize) {
         //eliminate all x from column i
         for a in 0..9 {
             if a != i {
-                self.cells[a][j].eliminate(x);
+                self.cells[a][j].eliminate(x - 1);
+                
             }
         }
+        //
         //eliminate all x from row j
         for b in 0..9 {
             if b != j {
-                self.cells[i][b].eliminate(x);
+                self.cells[i][b].eliminate(x - 1);
             }
         }
         //eliminate all x from group containing [i][j]
         let c_group = self.group(i, j);
         for a in 0..9 {
             for b in 0..9 {
-                if c_group == self.group(a, b) && a != i && b != j {
-                    self.cells[a][b].eliminate(x);
+                let t_group = self.group(a, b);
+                if c_group == t_group && !(a == i && b == j) {
+                    self.cells[a][b].eliminate(x - 1);
+                    println!("[{a}][{b}] is in group {group}", a=a, b=b, group=t_group);
+                    //println!("{cgroup} == {tgroup} && !({a} == {i} && {b} == {j}) and cannot be {x}", cgroup=c_group, tgroup=t_group, a=a, b=b, i=i, j=j, x=x);
+                    print!("[{a}][{b}] cannot be {x}", a=a, b=b, x=x);
                 }
             }
         }
+        println!("{:?}", "");
     }
 
     fn string(&self){
+        println!("{:?}", "--------------------------------");
         for i in 0..9 {
             for j in 0..9 {
                 if self.cells[i][j].count() == 1 {
-                    print!("{:?}", self.cells[i][j].solved_value());
+                    print!("|{:?}|", self.cells[i][j].solved_value().unwrap());
+                    
                 }
                 else{
-                    print!("{:?}", "?");
+                    print!("|({:?})", self.cells[i][j].count());
+                    print!(" {:?}|", "?");
                 }
             }
             println!("{:?}", "");
         }
+        println!("{:?}", "--------------------------------");
     }
 }
