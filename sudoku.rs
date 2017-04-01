@@ -4,21 +4,14 @@ fn main() {
 	//take the first (should also be only) string to parse into a grid
     let arg = env::args().nth(1).unwrap_or(String::from("."));
 
-    //println!("{:?}", arg);
-
     let mut grid = Grid::new(); 
 
-    //figure out how to add to the grid
     let mut row_index = 0;
     let mut col_index = 0;
     for c in arg.chars(){
     	if c.is_digit(10){
             let mut value = Possible::new();
-    		if c == '0'{
-    			//println!("{:?}", "We don't know");
-    		}
-    		else{
-    			//println!("{:?}", c);
+    		if c != '0'{
                 value.set(c.to_digit(10).unwrap() as usize - 1);
     		}
             grid.cells[row_index][col_index] = value;
@@ -29,9 +22,9 @@ fn main() {
             }
     	}
     }
+    println!("This is the parsed grid");
     grid.string();
-    //while !grid.is_solved() {
-    for i in 0..1{
+    while !grid.is_solved() {
         //for all in grid where we know it _is_ the value
         //call solve on the value
         for row_index in 0..9{
@@ -43,11 +36,10 @@ fn main() {
                 
             }
         }
-        grid.string();
     }
 
     //print solved grid
-    //grid.string();
+    grid.string();
 }
 #[derive(Copy, Clone)]
 struct Possible {
@@ -57,15 +49,11 @@ struct Possible {
 impl Possible {
 
 	fn new() -> Possible {
-		let mut n_v: [bool; 9] = [true, true, true, true, true, true, true, true, true];
+		let n_v: [bool; 9] = [true, true, true, true, true, true, true, true, true];
 		Possible {
 			v: n_v,
 		}
 	}
-
-    fn is_on(&self, i: usize) -> bool {
-    	return self.v[i];
-    }
 
     fn count(&self) -> i8 {
     	let mut i = 0;
@@ -89,9 +77,11 @@ impl Possible {
     }
 
     fn solved_value(&self) -> Option<usize> {
-        for i in 0..self.v.len() {
-            if self.v[i] {
-                return Some(i+1 as usize);
+        if self.count() == 1{
+            for i in 0..self.v.len() {
+                if self.v[i] {
+                    return Some(i+1 as usize);
+                }
             }
         }
         return None;
@@ -104,7 +94,7 @@ struct Grid {
 
 impl Grid {
     fn new() -> Grid {
-        let mut n_v: [[Possible; 9]; 9] = [[Possible::new(); 9]; 9];
+        let n_v: [[Possible; 9]; 9] = [[Possible::new(); 9]; 9];
 
         Grid {
             cells: n_v,
@@ -123,27 +113,6 @@ impl Grid {
             }
         }
         return true;
-    }
-
-
-    fn column(&self, i: usize) -> [Possible; 8] {
-        let mut r: [Possible; 8] = [Possible::new(); 8];
-        for j in 0..9 {
-            if j != i {
-                r[j] = self.cells[i][j];
-            }
-        }
-        return r;
-    }
-
-    fn row(&self, j: usize) -> [Possible; 8] {
-        let mut r: [Possible; 8] = [Possible::new(); 8];
-        for i in 0..9 {
-            if i != j {
-                r[i] = self.cells[i][j];
-            }
-        }
-        return r;
     }
 
     fn group(&self, i: usize, j: usize) -> i8 {
@@ -179,24 +148,26 @@ impl Grid {
         }
         panic!("{:?}","Something went terribly wrong");
     }
+    
     //cell[i][j] contains x
     //i is row
     //j is column
     fn solve(&mut self, i: usize, j: usize, x: usize) {
+
         //eliminate all x from column i
         for a in 0..9 {
             if a != i {
                 self.cells[a][j].eliminate(x - 1);
-                
             }
         }
-        //
+
         //eliminate all x from row j
         for b in 0..9 {
             if b != j {
                 self.cells[i][b].eliminate(x - 1);
             }
         }
+
         //eliminate all x from group containing [i][j]
         let c_group = self.group(i, j);
         for a in 0..9 {
@@ -204,13 +175,9 @@ impl Grid {
                 let t_group = self.group(a, b);
                 if c_group == t_group && !(a == i && b == j) {
                     self.cells[a][b].eliminate(x - 1);
-                    println!("[{a}][{b}] is in group {group}", a=a, b=b, group=t_group);
-                    //println!("{cgroup} == {tgroup} && !({a} == {i} && {b} == {j}) and cannot be {x}", cgroup=c_group, tgroup=t_group, a=a, b=b, i=i, j=j, x=x);
-                    print!("[{a}][{b}] cannot be {x}", a=a, b=b, x=x);
                 }
             }
         }
-        println!("{:?}", "");
     }
 
     fn string(&self){
@@ -218,7 +185,7 @@ impl Grid {
         for i in 0..9 {
             for j in 0..9 {
                 if self.cells[i][j].count() == 1 {
-                    print!("|{:?}|", self.cells[i][j].solved_value().unwrap());
+                    print!("|   {:?}   |", self.cells[i][j].solved_value().unwrap());
                     
                 }
                 else{
