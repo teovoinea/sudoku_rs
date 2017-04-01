@@ -1,4 +1,5 @@
 use std::env;
+use std::time::Instant;
 
 fn main() {
 	//take the first (should also be only) string to parse into a grid
@@ -24,6 +25,8 @@ fn main() {
     }
     println!("This is the parsed grid");
     grid.string();
+    let start = Instant::now();
+    println!("Starting now: {:?}", start);
     while !grid.is_solved() {
         //for all in grid where we know it _is_ the value
         //call solve on the value
@@ -37,7 +40,9 @@ fn main() {
             }
         }
     }
-
+    let elapsed = start.elapsed();
+    println!("Elapsed: {} ms",
+             (elapsed.as_secs() * 1_000) + (elapsed.subsec_nanos() / 1_000_000) as u64);
     //print solved grid
     grid.string();
 }
@@ -148,7 +153,7 @@ impl Grid {
         }
         panic!("{:?}","Something went terribly wrong");
     }
-    
+
     //cell[i][j] contains x
     //i is row
     //j is column
